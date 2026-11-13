@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0630">
+<title>Live Photo Host — AI voice for photo lives</title>
+<link rel="stylesheet" href="css/studio.css">
+</head>
+<body>
+
+<!-- ============ 9:16 STAGE (1080 x 1920, auto-scaled) ============ -->
+<div id="viewport">
+  <div id="stage">
+    <div id="layers"></div>
+    <div id="topbar" hidden><span class="livebadge">● LIVE</span><span id="chName"></span></div>
+    <div id="timer" hidden><span id="timerNum">0</span></div>
+    <div id="qbox" hidden><div id="qtext"></div><div class="sub" id="qsub"></div></div>
+    <div id="winner" hidden><img id="wAv" alt=""><div><div id="wName"></div><div id="wSub"></div></div></div>
+    <div id="pauseBadge" hidden>⏸ PAUSED</div>
+  </div>
+</div>
+
+<!-- ============ SETUP ============ -->
+<div id="setup">
+  <div class="card">
+    <div class="title">🎙️ Live Photo Host</div>
+    <div class="sub">Your photos + an AI voice that welcomes viewers, reads your questions and reacts to chat answers</div>
+
+    <h3>1 · Photos</h3>
+    <input id="fileIn" type="file" accept="image/*" multiple>
+    <div class="hint">Add any photos (any size). Each one is placed on a 9:16 screen. Photos stay saved in this browser.</div>
+    <div id="thumbs"></div>
+
+    <div id="editor" hidden>
+      <div class="edwrap">
+        <div id="pv"><div class="pvbg" id="pvbg"></div><img id="pvimg" alt=""><div id="pvGuide"></div></div>
+        <div class="edctl">
+          <label>Zoom <em>(drag the photo to move it; pinch / wheel to zoom)</em></label>
+          <input id="zoom" type="range" min="0.3" max="4" step="0.01" value="1">
+          <div class="btns">
+            <button class="btn sm ghost" id="bFill" type="button">Fill screen</button>
+            <button class="btn sm ghost" id="bFit" type="button">Fit whole photo</button>
+            <button class="btn sm ghost" id="bReset" type="button">Reset</button>
+          </div>
+          <div class="btns">
+            <button class="btn sm" id="bLeft" type="button">◀ Earlier</button>
+            <button class="btn sm" id="bRight" type="button">Later ▶</button>
+            <button class="btn sm" id="bSave" type="button">⬇ Save 9:16 PNG</button>
+            <button class="btn sm" id="bDel" type="button" style="background:#7a1626">🗑 Delete</button>
+          </div>
+        </div>
+      </div>
+      <label>Text on screen <em>(question / caption — optional)</em></label>
+      <input id="fCap" type="text" placeholder="e.g. ఈ సినిమా పేరు ఏమిటి?">
+      <label>Correct answer(s) <em>(optional · separate alternatives with commas)</em></label>
+      <input id="fAns" type="text" placeholder="e.g. పుష్ప, pushpa">
+      <label>What the AI says when this photo appears <em>(optional — otherwise it reads the text on screen)</em></label>
+      <input id="fIntro" type="text" placeholder="e.g. ఈ ఫోటో చూసి సినిమా పేరు చెప్పండి!">
+      <div class="row2">
+        <div><label>Seconds on screen <em>(blank = auto)</em></label><input id="fDur" type="number" min="5" max="600" placeholder="auto"></div>
+        <div><label>&nbsp;</label><div class="hint" style="margin:0">Photos with an answer: 59 s. Others: 40 s.</div></div>
+      </div>
+    </div>
+
+    <h3>2 · YouTube live</h3>
+    <label>Live link <em>(video link, or your channel link)</em></label>
+    <input id="inVideo" type="text" placeholder="https://www.youtube.com/watch?v=xxxxxxxxxxx" autocomplete="off" spellcheck="false">
+    <label>Channel name on screen <em>(optional)</em></label>
+    <input id="inChan" type="text" maxlength="30" placeholder="Your channel name">
+
+    <h3>3 · Voice</h3>
+    <div class="row2">
+      <div><label>Language</label>
+        <select id="selLang"><option value="te">Telugu</option><option value="en">English</option><option value="hi">Hindi</option><option value="ta">Tamil</option></select></div>
+      <div><label>Voice</label><select id="selVoice"></select></div>
+    </div>
+    <div class="row3">
+      <div><label>Speed</label><input id="rRate" type="range" min="0.6" max="1.5" step="0.05" value="1"></div>
+      <div><label>Pitch</label><input id="rPitch" type="range" min="0.5" max="1.6" step="0.05" value="1"></div>
+      <div><label>Volume</label><input id="rVol" type="range" min="0" max="1" step="0.05" value="1"></div>
+    </div>
+    <div class="btns"><button class="btn sm" id="bTest" type="button">🔊 Test voice</button><button class="btn sm ghost" id="bTplReset" type="button">↺ Reset sentences for this language</button></div>
+    <div id="voiceHint" class="warn" hidden></div>
+    <div id="neuralHint" class="hint"></div>
+
+    <h3>4 · What the voice says</h3>
+    <div class="hint">Use <b>{name}</b> (viewer), <b>{names}</b> (several viewers), <b>{answer}</b>. Edit freely.</div>
+    <label>Welcome <em>(when the live starts)</em></label><textarea id="tWelcome" rows="2"></textarea>
+    <label>First correct answer</label><textarea id="tCorrect" rows="2"></textarea>
+    <label>Other correct answers <em>({names})</em></label><textarea id="tAlso" rows="2"></textarea>
+    <label>Wrong answer <em>(encouragement)</em></label><textarea id="tWrong" rows="2"></textarea>
+    <label>Time up, nobody got it <em>({answer})</em></label><textarea id="tTimeup" rows="2"></textarea>
+    <label>Welcome new viewers <em>({names})</em></label><textarea id="tNewv" rows="2"></textarea>
+    <label>Engagement lines <em>(one per line — spoken in turn)</em></label><textarea id="tEngage" rows="4"></textarea>
+    <div class="row2">
+      <div><label>Engagement line every (sec)</label><input id="inEngage" type="number" min="20" max="900" value="90"></div>
+      <div><label>Next photo after a correct answer (sec)</label><input id="inAfter" type="number" min="0" max="60" value="8"></div>
+    </div>
+    <h3>On the main screen</h3>
+    <div class="hint">By default the screen shows <b>only your photo</b> — nothing else. Turn on extras only if you want them.</div>
+    <label class="chk"><input id="xQ" type="checkbox"> Question text box</label>
+    <label class="chk"><input id="xWin" type="checkbox"> Winner banner (name + picture)</label>
+    <label class="chk"><input id="xTimer" type="checkbox"> Countdown circle</label>
+    <label class="chk"><input id="xBadge" type="checkbox"> LIVE badge + channel name</label>
+    <label>Photo motion <em>(gentle movement so the screen isn't frozen)</em></label>
+    <select id="selMotion"><option value="in">Slow zoom in</option><option value="out">Slow zoom out</option><option value="pan">Slow pan</option><option value="none">None</option></select>
+    <label>Conversation questions <em>(one per line — the host asks the chat, in turn)</em></label><textarea id="tConvo" rows="5"></textarea>
+    <label>Reading a chatter's message aloud <em>({name}, {text})</em></label><textarea id="tReadc" rows="2"></textarea>
+    <label>Hurry up <em>(said when few seconds are left)</em></label><textarea id="tHurry" rows="2"></textarea>
+    <div class="row2">
+      <div><label>Ask a conversation question every (sec)</label><input id="inConvo" type="number" min="15" max="600" value="45"></div>
+      <div></div>
+    </div>
+    <label class="chk"><input id="chkRead" type="checkbox" checked> Read some chatters' messages aloud and reply to them</label>
+    <label class="chk"><input id="chkShuffle" type="checkbox"> Shuffle photo order every round</label>
+    <label class="chk"><input id="chkGreet" type="checkbox" checked> Greet new chatters by name</label>
+    <label class="chk"><input id="chkWrong" type="checkbox" checked> React to wrong answers</label>
+    <label class="chk"><input id="chkLoop" type="checkbox" checked> Loop through the photos again and again</label>
+
+    <div id="setupErr" class="warn" hidden></div>
+    <button id="btnStart" class="btn gold">▶ START LIVE</button>
+    <button id="btnDemo" class="btn ghost" style="width:100%;margin-top:10px">🧪 Demo (fake chat)</button>
+    <div class="hint" style="text-align:center;margin-top:10px">Tap Start once — browsers only allow voice after a tap. Then share this tab (with audio) in your streaming app.</div>
+  </div>
+</div>
+
+<button id="gear" title="Host controls (H)">⚙</button>
+<div id="host" hidden>
+  <div id="hostStatus">—</div>
+  <div class="btns">
+    <button class="btn sm" id="hPause" type="button">⏯ Pause</button>
+    <button class="btn sm" id="hPrev" type="button">⏮ Prev</button>
+    <button class="btn sm" id="hNext" type="button">⏭ Next</button>
+    <button class="btn sm" id="hWelcome" type="button">👋 Welcome</button>
+    <button class="btn sm" id="hStop" type="button" style="background:#7a1626">■ Stop</button>
+  </div>
+</div>
+
+<script src="js/chat.js"></script>
+<script src="js/studio.js"></script>
+</body>
+</html>
