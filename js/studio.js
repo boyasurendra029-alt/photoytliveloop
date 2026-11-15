@@ -218,6 +218,7 @@
       for (const f of files) { try { const p = await addPhoto(f); persist(p); if (first < 0) first = S.photos.length - 1; } catch (err) { /* skip */ } }
       e.target.value = '';
       if (first >= 0) select(first);
+      armIdle();
     });
   }
   async function exportPng(p) {
@@ -601,6 +602,7 @@
   }
 
   function start(demo) {
+    cancelIdle();
     err('');
     readCfg();
     if (!S.photos.length) return err('Add at least one photo first.');
@@ -670,6 +672,16 @@
   if (hasTTS) { speechSynthesis.onvoiceschanged = fillVoices; }
   fetch('/api/tts?check=1').then((r) => r.json()).then((j) => { S.srvVoices = (j && j.voices) || []; fillVoices(); }).catch(() => {});
 
+  // ---- auto demo: if nothing is clicked for 20s after photos are uploaded / loaded, start Demo ----
+  let idleT = null;
+  function cancelIdle() { clearTimeout(idleT); idleT = null; }
+  function armIdle() {
+    cancelIdle();
+    if (S.running || !S.photos.length) return;
+    idleT = setTimeout(() => { idleT = null; if (!S.running && S.photos.length) start(true); }, 20000);
+  }
+  ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input'].forEach((ev) => window.addEventListener(ev, cancelIdle, { capture: true, passive: true }));
+
   bindEditor();
   fillCfg();
   fillVoices();
@@ -677,6 +689,7 @@
     rows.sort((a, b) => (a.order || 0) - (b.order || 0));
     for (const r of rows) { try { await addPhoto(r.blob, { id: r.id, cfg: r.cfg || { z: 1, x: 0, y: 0 }, caption: r.caption || '', answer: r.answer || '', intro: r.intro || '', dur: r.dur || '' }); } catch (e) { /* skip bad */ } }
     if (S.photos.length) select(0);
+    armIdle();
     if (params.get('autostart') === 'demo') setTimeout(() => start(true), 200);
   });
 
